@@ -1,4 +1,4 @@
-# 🎙️ Personal Voice Assistant (Offline Alexa Clone)
+# 🎙️ Personal Voice Assistant 
 
 A fully offline, modular voice assistant built in Python.  
 Wake it up using a custom wake word (“Alexa”), speak commands, and control your laptop using voice.
