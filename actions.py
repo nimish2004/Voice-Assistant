@@ -4,6 +4,8 @@ import datetime
 import sys
 import subprocess
 import psutil
+from state import RUNNING
+
 
 # ---------- ACTION ENGINE v2 ----------
 
@@ -115,7 +117,10 @@ def handle_intent(intent):
     # ===== EXIT =====
     elif intent == "exit":
         print("Goodbye 👋")
-        sys.exit(0)
+        import state
+        state.RUNNING = False
+
+
 
     # ===== FALLBACK =====
     else:

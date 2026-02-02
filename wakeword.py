@@ -1,3 +1,4 @@
+import state
 from openwakeword.model import Model
 import sounddevice as sd
 import numpy as np
@@ -18,9 +19,6 @@ block_size = 1280
 last_trigger_time = 0
 hit_count = 0
 
-print("Wake word engine started.")
-print("Say 'Alexa' to wake.")
-print("Press Ctrl+C to stop.\n")
 
 # ---------- CORE FUNCTION ----------
 def start_wake_engine(on_wake_callback):
@@ -54,7 +52,7 @@ def start_wake_engine(on_wake_callback):
             channels=1,
             callback=callback
         ):
-            while True:
+            while state.RUNNING:
                 time.sleep(0.1)
 
     except KeyboardInterrupt:
