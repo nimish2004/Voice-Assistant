@@ -3,10 +3,11 @@ from openwakeword.model import Model
 import sounddevice as sd
 import numpy as np
 import time
+import threading
 
 # ---------- CONFIG ----------
 WAKE_WORD = "alexa"
-THRESHOLD = 0.85
+THRESHOLD = 0.8
 REQUIRED_HITS = 3
 COOLDOWN = 3.0
 
@@ -42,7 +43,7 @@ def start_wake_engine(on_wake_callback):
                 last_trigger_time = now
                 hit_count = 0
                 print("🔥 Wake word detected!")
-                on_wake_callback()
+                threading.Thread(target=on_wake_callback, daemon=True).start()
 
     try:
         with sd.RawInputStream(

@@ -2,6 +2,7 @@
 
 A fully offline, modular voice assistant built in Python.  
 Wake it up using a custom wake word (“Alexa”), speak commands, and control your laptop using voice.
+Now includes a **hybrid brain**: LLM intent parsing with deterministic fallback rules for reliability.
 
 No cloud.  
 No paid APIs.  
@@ -14,6 +15,7 @@ Runs completely on your local machine.
 - Custom Wake Word Detection (using OpenWakeWord)
 - Offline Speech Recognition (using OpenAI Whisper)
 - Modular Architecture (easy to extend)
+- Hybrid Intent Engine (LLM + rule-based fallback)
 - Control Laptop with Voice:
   - Open apps (Chrome, Spotify, VS Code, etc.)
   - Media controls (play, pause, next, previous)
@@ -122,3 +124,5 @@ This project:
 Built by Nimish
 
 This project is meant to help others learn how real voice assistants are built from scratch.
+
+

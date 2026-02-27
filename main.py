@@ -1,14 +1,19 @@
+from pydoc import text
+from unittest import result
+
 from wakeword import start_wake_engine
 from speech import listen_and_transcribe
 from llm_brain import get_intent_llm
 from actions import handle_intent
 import time
 from state import RUNNING
+from tts import speak
 
 
 print("=================================")
 print("  Personal Voice Assistant v2.0 ")
 print("=================================")
+speak("Welcome to Numa -your personal voice assistant. Say Numa to wake the system.")
 print("Say 'Alexa' to wake.")
 print("Press Ctrl+C to stop.\n")
 
@@ -28,8 +33,9 @@ def on_wake():
 
     # Step 1: Listen
     text = listen_and_transcribe()
-    if not text:
-        return
+    if not text or len(text.split()) < 2:
+       print("⚠️ Ignoring short / weak command")
+       return
 
     print("User said:", text)
 
@@ -38,14 +44,14 @@ def on_wake():
     print("LLM result:", result)
 
     # Step 3: Act
+    # Step 3: Act
     if "intents" in result:
-        for intent in result["intents"]:
-            print("Executing:", intent)
-            handle_intent(intent)
+        for single_intent in result["intents"]:
+            print("Executing:", single_intent)
+            handle_intent({"intent": single_intent})
     else:
-        intent = result.get("intent", "unknown")
-        print("Executing:", intent)
-        handle_intent(intent)
+        print("Executing:", result.get("intent"))
+        handle_intent(result)
 
 # Start system
 start_wake_engine(on_wake)

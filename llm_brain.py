@@ -1,73 +1,62 @@
 import requests
 import json
+import re
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "mistral"
+MODEL = "phi3"
 
+# Short, fast prompt (less tokens = faster)
 SYSTEM_PROMPT = """
-You are an AI brain for a voice assistant.
-
-Your job is to convert user text into structured intents.
-
-Only respond in JSON.
+Convert the user command into a JSON intent.
 
 Valid intents:
-- open_chrome
-- open_spotify
-- open_vscode
-- open_notepad
-- open_youtube
-- play_music
-- pause_music
-- next_track
-- prev_track
-- lock_laptop
-- shutdown
-- restart
-- sleep
-- mute
-- volume_up
-- volume_down
-- take_screenshot
-- tell_time
-- tell_date
-- battery_status
-- open_terminal
-- git_status
-- exit
+open_chrome, open_spotify, open_vscode, open_notepad, set_volume,
+open_youtube, play_music, pause_music, next_track,
+prev_track, lock_laptop, shutdown, restart, sleep,
+mute, volume_up, volume_down, take_screenshot,
+tell_time, tell_date, battery_status, open_terminal,
+git_status, exit.
 
-If multiple actions are needed, return:
+If multiple:
+{"intents":["intent1","intent2"]}
 
-{
-  "intents": ["intent1", "intent2"]
-}
+If single:
+{"intent":"intent_name"}
 
-If only one action:
+If unknown:
+{"intent":"unknown"}
 
-{
-  "intent": "intent_name"
-}
-
-If you cannot map it, return:
-
-{
-  "intent": "unknown"
-}
+Return JSON only.
 """
+
+
+def extract_json(text):
+    """Safely extract JSON from model output."""
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except:
+            pass
+    return {"intent": "unknown"}
+
 
 def get_intent_llm(text):
     payload = {
         "model": MODEL,
         "prompt": SYSTEM_PROMPT + "\nUser: " + text,
-        "stream": False
+        "stream": False,
+        "format": "json",  # force JSON output
+        "options": {
+            "temperature": 0,
+            "num_predict": 40
+        }
     }
 
     try:
         response = requests.post(OLLAMA_URL, json=payload)
-        result = response.json()["response"]
-
-        data = json.loads(result)
-        return data
+        result = response.json().get("response", "")
+        return extract_json(result)
 
     except Exception as e:
         print("LLM error:", e)
