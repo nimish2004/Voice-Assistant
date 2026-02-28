@@ -18,18 +18,18 @@ print("Say 'Alexa' to wake.")
 print("Press Ctrl+C to stop.\n")
 
 
-last_command_time = 0
-COMMAND_COOLDOWN = 4  # seconds
+# last_command_time = 0
+# COMMAND_COOLDOWN = 4  # seconds
 
 def on_wake():
-    global last_command_time
-    now = time.time()
+    # global last_command_time
+    # now = time.time()
 
-    # Cooldown to avoid double triggers
-    if now - last_command_time < COMMAND_COOLDOWN:
-        return
+    # # Cooldown to avoid double triggers
+    # if now - last_command_time < COMMAND_COOLDOWN:
+    #     return
 
-    last_command_time = now
+    # last_command_time = now
 
     # Step 1: Listen
     text = listen_and_transcribe()
