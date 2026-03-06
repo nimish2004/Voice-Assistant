@@ -43,15 +43,18 @@ def on_wake():
     result = get_intent_llm(text)
     print("LLM result:", result)
 
-    # Step 3: Act
-    # Step 3: Act
-    if "intents" in result:
-        for single_intent in result["intents"]:
-            print("Executing:", single_intent)
-            handle_intent({"intent": single_intent})
-    else:
-        print("Executing:", result.get("intent"))
+    # Step 3: Decide what to do
+
+    if result.get("type") == "task":
         handle_intent(result)
+
+    elif result.get("type") == "chat":
+        reply = result.get("response", "")
+        print("Assistant:", reply)
+        speak(reply)
+
+    else:
+        print("Unknown response")
 
 # Start system
 start_wake_engine(on_wake)

@@ -7,26 +7,61 @@ MODEL = "phi3"
 
 # Short, fast prompt (less tokens = faster)
 SYSTEM_PROMPT = """
-Convert the user command into a JSON intent.
+You are the brain of a voice assistant.
 
-Valid intents:
-open_chrome, open_spotify, open_vscode, open_notepad, set_volume,
-open_youtube, play_music, pause_music, next_track,
-prev_track, lock_laptop, shutdown, restart, sleep,
-mute, volume_up, volume_down, take_screenshot,
-tell_time, tell_date, battery_status, open_terminal,
-git_status, exit.
+Decide whether the user wants to:
 
-If multiple:
-{"intents":["intent1","intent2"]}
+1) Execute a system task
+2) Have a conversation
 
-If single:
-{"intent":"intent_name"}
+If it is a task return JSON:
 
-If unknown:
-{"intent":"unknown"}
+{
+"type":"task",
+"intent":"intent_name",
+"parameters":{}
+}
 
-Return JSON only.
+If it is conversation return JSON:
+
+{
+"type":"chat",
+"response":"assistant reply"
+}
+
+Available task intents:
+
+open_chrome
+open_spotify
+open_vscode
+open_notepad
+open_youtube
+play_music
+pause_music
+next_track
+prev_track
+lock_laptop
+shutdown
+restart
+sleep
+mute
+volume_up
+volume_down
+set_volume
+take_screenshot
+tell_time
+tell_date
+battery_status
+open_terminal
+git_status
+exit
+
+If the sentence is unclear return:
+
+{
+"type":"chat",
+"response":"Sorry, I didn't understand that."
+}
 """
 
 
@@ -38,7 +73,12 @@ def extract_json(text):
             return json.loads(match.group())
         except:
             pass
-    return {"intent": "unknown"}
+    
+    # safe fallback
+    return {
+        "type": "chat",
+        "response": "Sorry, I didn't understand that."
+    }
 
 
 def get_intent_llm(text):
@@ -49,7 +89,7 @@ def get_intent_llm(text):
         "format": "json",  # force JSON output
         "options": {
             "temperature": 0,
-            "num_predict": 40
+            "num_predict": 60
         }
     }
 
@@ -60,4 +100,7 @@ def get_intent_llm(text):
 
     except Exception as e:
         print("LLM error:", e)
-        return {"intent": "unknown"}
+        return {
+            "type": "chat",
+            "response": "Something went wrong."
+        }
