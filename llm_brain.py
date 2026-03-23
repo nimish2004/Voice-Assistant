@@ -1,12 +1,19 @@
-import requests
+import os
 import json
 import re
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
 from memory import add_to_memory, get_memory
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "phi3"
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Short, fast prompt (less tokens = faster)
+if not GEMINI_API_KEY:
+    print("⚠️ GEMINI_API_KEY not found in .env file!")
+
+client = genai.Client(api_key=GEMINI_API_KEY)
+
 SYSTEM_PROMPT = """
 You are Numa, the brain of a voice assistant.
 
@@ -21,7 +28,6 @@ If it is conversation return ONLY compact JSON:
 {"type":"chat","response":"your reply"}
 
 Available task intents (use EXACT names):
-
 open_chrome, open_spotify, open_vscode, open_notepad, open_youtube
 open_app       -> use parameters: {"app": "app_name"}
 play_music, pause_music, next_track, prev_track
@@ -47,8 +53,7 @@ def extract_json(text):
             return json.loads(match.group())
         except:
             pass
-    
-    # safe fallback
+
     return {
         "type": "chat",
         "response": "Sorry, I didn't understand that."
@@ -56,46 +61,42 @@ def extract_json(text):
 
 
 def get_intent_llm(text):
-    history = get_memory()
+    if not GEMINI_API_KEY:
+        return {
+            "type": "chat",
+            "response": "Please set your Gemini API key in the .env file."
+        }
 
+    history = get_memory()
     conversation = ""
 
     for msg in history:
         conversation += f"{msg['role']}: {msg['content']}\n"
 
     conversation += f"user: {text}\nassistant:"
-
-    payload = {
-        "model": MODEL,
-        "prompt": SYSTEM_PROMPT + "\n\n" + conversation,
-        "stream": False,
-        "format": "json",
-        "options": {
-            "temperature": 0,
-            "num_predict": 80
-        }
-    }
+    full_prompt = SYSTEM_PROMPT + "\n\n" + conversation
 
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=10)
-        result = extract_json(response.json().get("response", ""))
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
+                temperature=0,
+                response_mime_type="application/json",
+            ),
+        )
 
-        # Save to memory BEFORE returning (was broken before - dead code after return)
+        result = extract_json(response.text)
+
         add_to_memory("user", text)
         if result.get("type") == "chat":
             add_to_memory("assistant", result.get("response", ""))
 
         return result
 
-    except requests.exceptions.ConnectionError:
-        print("⚠️  Ollama server is not running. Start it with: ollama serve")
-        return {
-            "type": "chat",
-            "response": "I can't think right now. Please make sure Ollama is running."
-        }
     except Exception as e:
         print("LLM error:", e)
         return {
             "type": "chat",
-            "response": "Something went wrong."
+            "response": "Something went wrong communicating with the cloud AI."
         }

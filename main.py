@@ -1,9 +1,7 @@
-
 from wakeword import start_wake_engine
 from speech import listen_and_transcribe
 from llm_brain import get_intent_llm
 from actions import handle_intent
-import time
 from state import RUNNING
 from tts import speak
 
@@ -16,43 +14,34 @@ print("Press Ctrl+C to stop.\n")
 speak("Welcome! I am Numa, your personal voice assistant. Say Alexa to wake me up.")
 
 
-# last_command_time = 0
-# COMMAND_COOLDOWN = 4  # seconds
-
 def on_wake():
-    # global last_command_time
-    # now = time.time()
+    try:
+        # Step 1: Listen
+        text = listen_and_transcribe()
+        if not text or len(text.split()) < 2:
+            print("⚠️ Ignoring short / weak command")
+            return
 
-    # # Cooldown to avoid double triggers
-    # if now - last_command_time < COMMAND_COOLDOWN:
-    #     return
+        print("User said:", text)
 
-    # last_command_time = now
+        # Step 2: Think (LLM)
+        result = get_intent_llm(text)
+        print("LLM result:", result)
 
-    # Step 1: Listen
-    text = listen_and_transcribe()
-    if not text or len(text.split()) < 2:
-       print("⚠️ Ignoring short / weak command")
-       return
+        # Step 3: Act
+        if result.get("type") == "task":
+            handle_intent(result)
 
-    print("User said:", text)
+        elif result.get("type") == "chat":
+            reply = result.get("response", "")
+            speak(reply)
 
-    # Step 2: Think (LLM)
-    result = get_intent_llm(text)
-    print("LLM result:", result)
+        else:
+            print("Unknown response type")
 
-    # Step 3: Decide what to do
+    except Exception as e:
+        print(f"Error handling wake event: {e}")
 
-    if result.get("type") == "task":
-        handle_intent(result)
-
-    elif result.get("type") == "chat":
-        reply = result.get("response", "")
-        print("Assistant:", reply)
-        speak(reply)
-
-    else:
-        print("Unknown response")
 
 # Start system
 start_wake_engine(on_wake)

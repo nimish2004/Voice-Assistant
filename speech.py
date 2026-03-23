@@ -6,8 +6,8 @@ import time
 
 SAMPLE_RATE = 16000
 
-# Use faster English-only model
-whisper_model = whisper.load_model("tiny.en")
+# Use base English-only model (more accurate than tiny, still fast)
+whisper_model = whisper.load_model("base.en")
 
 
 # ---------- AUTO CALIBRATION ----------
@@ -45,7 +45,7 @@ def listen_and_transcribe():
     silence_start = None
 
     MAX_SILENCE = 0.6
-    MAX_RECORD_TIME = 5
+    MAX_RECORD_TIME = 8
     start_time = time.time()
 
     def callback(indata, frames, time_info, status):
