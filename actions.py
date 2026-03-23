@@ -2,6 +2,9 @@ import os
 import pyautogui
 import datetime
 import subprocess
+import webbrowser
+import urllib.parse
+import requests as req
 import psutil
 from tts import speak
 from pycaw.pycaw import AudioUtilities
@@ -55,6 +58,50 @@ def open_youtube(data):
     speak("Opening YouTube.")
     os.system("start https://www.youtube.com")
 
+# ---------- WEB SEARCH ----------
+
+def web_search(data):
+    query = data.get("parameters", {}).get("query", "") or data.get("query", "")
+    if not query:
+        speak("What would you like me to search for?")
+        return
+    speak(f"Searching for {query}.")
+    url = "https://www.google.com/search?q=" + urllib.parse.quote(query)
+    webbrowser.open(url)
+
+# ---------- WEATHER ----------
+
+def get_weather(data):
+    city = data.get("parameters", {}).get("city", "") or data.get("city", "")
+    city = city.strip() if city else "auto"
+    try:
+        speak("Let me check the weather.")
+        url = f"https://wttr.in/{urllib.parse.quote(city)}?format=3"
+        response = req.get(url, timeout=5)
+        if response.status_code == 200:
+            weather_text = response.text.strip()
+            speak(weather_text)
+            print("Weather:", weather_text)
+        else:
+            speak("I couldn't fetch the weather right now.")
+    except Exception as e:
+        print("Weather error:", e)
+        speak("I couldn't reach the weather service.")
+
+# ---------- OPEN ANY APP ----------
+
+def open_app(data):
+    app_name = data.get("parameters", {}).get("app", "") or data.get("app", "")
+    if not app_name:
+        speak("Which app would you like me to open?")
+        return
+    speak(f"Opening {app_name}.")
+    try:
+        os.system(f"start {app_name}")
+    except Exception as e:
+        print("App open error:", e)
+        speak(f"I couldn't open {app_name}.")
+
 # ---------- SYSTEM ACTIONS ----------
 
 def lock_laptop(data):
@@ -96,8 +143,12 @@ def set_volume(data):
 def take_screenshot(data):
     speak("Taking a screenshot.")
     img = pyautogui.screenshot()
-    filename = f"screenshot_{datetime.datetime.now().strftime('%H%M%S')}.png"
+    folder = "screenshots"
+    os.makedirs(folder, exist_ok=True)
+    filename = os.path.join(folder, f"screenshot_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
     img.save(filename)
+    speak(f"Screenshot saved.")
+    print(f"Screenshot saved to: {filename}")
 
 # ---------- INFO ----------
 
@@ -153,6 +204,11 @@ INTENT_MAP = {
     "open_vscode": open_vscode,
     "open_notepad": open_notepad,
     "open_youtube": open_youtube,
+    "open_app": open_app,
+
+    # Web
+    "web_search": web_search,
+    "get_weather": get_weather,
 
     # System
     "lock_laptop": lock_laptop,

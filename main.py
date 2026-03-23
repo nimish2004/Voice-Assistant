@@ -1,5 +1,3 @@
-from pydoc import text
-from unittest import result
 
 from wakeword import start_wake_engine
 from speech import listen_and_transcribe
@@ -10,12 +8,12 @@ from state import RUNNING
 from tts import speak
 
 
-print("=================================")
-print("  Personal Voice Assistant v2.0 ")
-print("=================================")
-speak("Welcome to Numa -your personal voice assistant. Say Numa to wake the system.")
-print("Say 'Alexa' to wake.")
+print("====================================")
+print("   Numa - Personal Voice Assistant  ")
+print("====================================")
+print("[NOTE] Wake word is 'Alexa' (temporary, Numa model in training)")
 print("Press Ctrl+C to stop.\n")
+speak("Welcome! I am Numa, your personal voice assistant. Say Alexa to wake me up.")
 
 
 # last_command_time = 0
