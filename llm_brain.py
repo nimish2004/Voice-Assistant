@@ -39,6 +39,7 @@ tell_time, tell_date, battery_status
 open_terminal, git_status
 web_search     -> use parameters: {"query": "search terms"}
 get_weather    -> use parameters: {"city": "city name"}
+clear_memory
 exit
 
 If unclear: {"type":"chat","response":"Sorry, I didn't understand that."}

@@ -8,6 +8,7 @@ import requests as req
 import psutil
 from tts import speak
 from pycaw.pycaw import AudioUtilities
+from memory import clear_memory
 
 # ---------- HELPERS ----------
 
@@ -180,6 +181,12 @@ def git_status(data):
     except:
         print("Not a git repository")
 
+# ---------- MEMORY ----------
+
+def forget_everything(data):
+    clear_memory()
+    speak("Done, I've cleared my memory.")
+
 # ---------- EXIT ----------
 
 def exit_app(data):
@@ -229,6 +236,9 @@ INTENT_MAP = {
     # Dev
     "open_terminal": open_terminal,
     "git_status": git_status,
+
+    # Memory
+    "clear_memory": forget_everything,
 
     # Exit
     "exit": exit_app
