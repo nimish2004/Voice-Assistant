@@ -1,47 +1,96 @@
+"""
+main.py — Entry point for Numa Personal Voice Assistant.
+
+Pipeline:
+    wakeword.py  →  speech.py  →  llm_brain.py  →  actions.py
+         ↑                                               ↓
+         └──────────────── main.py (orchestrator) ───────┘
+"""
+
+import sys
+import state                          # ← import the MODULE, not a value
 from wakeword import start_wake_engine
 from speech import listen_and_transcribe
 from llm_brain import get_intent_llm
 from actions import handle_intent
-from state import RUNNING
 from tts import speak
 
 
-print("====================================")
-print("   Numa - Personal Voice Assistant  ")
-print("====================================")
-print("[NOTE] Wake word is 'Alexa' (temporary, Numa model in training)")
-print("Press Ctrl+C to stop.\n")
-speak("Welcome! I am Numa, your personal voice assistant. Say Alexa to wake me up.")
+# ── Startup banner ────────────────────────────────────────────────────────────
 
+def print_banner():
+    print()
+    print("╔══════════════════════════════════════╗")
+    print("║     Numa — Personal Voice Assistant   ║")
+    print("╠══════════════════════════════════════╣")
+    print("║  Wake word : Alexa (Numa WW training) ║")
+    print("║  Press Ctrl+C to stop                 ║")
+    print("╚══════════════════════════════════════╝")
+    print()
+
+
+# ── Wake event handler ────────────────────────────────────────────────────────
 
 def on_wake():
+    """
+    Called in a daemon thread each time the wake word is detected.
+    The processing lock in wakeword.py guarantees this never runs
+    concurrently with itself.
+    """
     try:
-        # Step 1: Listen
+        # ── Step 1: Listen ────────────────────────────────────────────────
         text = listen_and_transcribe()
+
         if not text or len(text.split()) < 2:
-            print("⚠️ Ignoring short / weak command")
+            print("⚠️  Too short — ignoring.")
             return
 
-        print("User said:", text)
+        print(f"\n🗣️  You said : {text}")
 
-        # Step 2: Think (LLM)
+        # ── Step 2: Think (LLM → intent) ─────────────────────────────────
         result = get_intent_llm(text)
-        print("LLM result:", result)
+        print(f"🧠  Intent   : {result}")
 
-        # Step 3: Act
-        if result.get("type") == "task":
+        # ── Step 3: Act ───────────────────────────────────────────────────
+        rtype = result.get("type")
+
+        if rtype == "task":
             handle_intent(result)
 
-        elif result.get("type") == "chat":
+        elif rtype == "chat":
             reply = result.get("response", "")
-            speak(reply)
+            if reply:
+                speak(reply)
 
         else:
-            print("Unknown response type")
+            print("⚠️  Unknown response type from LLM.")
 
     except Exception as e:
-        print(f"Error handling wake event: {e}")
+        # Never crash the wake engine — just log and keep listening
+        print(f"❌  Error in on_wake: {e}")
+
+    finally:
+        # Always release the processing lock so the next wake can fire
+        state.set_processing(False)
 
 
-# Start system
-start_wake_engine(on_wake)
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+def main():
+    print_banner()
+    speak("Hello! I am Numa, your personal voice assistant. Say Alexa to wake me up.")
+
+    try:
+        start_wake_engine(on_wake)          # blocks until state.is_running() → False
+
+    except KeyboardInterrupt:
+        print("\n\n👋  Ctrl+C received — shutting down Numa.")
+
+    finally:
+        state.stop()                        # ensure flag is set even on crash
+        print("✅  Numa stopped cleanly.")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
