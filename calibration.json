@@ -1,5 +1,5 @@
 {
-  "baseline": 0.0024518889957107605,
-  "silence_threshold": 0.008581611484987662,
-  "mic_off_threshold": 0.00012259444978553804
+  "baseline": 7.141113292163936e-06,
+  "silence_threshold": 2.4993896522573775e-05,
+  "mic_off_threshold": 3.570556646081968e-07
 }

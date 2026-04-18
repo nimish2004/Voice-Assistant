@@ -44,6 +44,11 @@ def _forget_everything(data: dict):
 def _exit_app(data: dict):
     speak("Goodbye.")
     state.stop()
+    # Tell Qt to shut down — without this the tray and UI keep running
+    # even after the wake engine stops. quit_requested is connected to
+    # app.quit() in main.py which cleanly exits the Qt event loop.
+    from app.signals import numa_signals
+    numa_signals.quit_requested.emit()
 
 
 def _toggle_mute(data: dict):

@@ -1,13 +1,46 @@
+# ── Numa Requirements ─────────────────────────────────────────────────────────
+# Install with: pip install -r requirements.txt
+#
+# Additional manual steps required:
+#   1. Install FFmpeg (required by Whisper):
+#      https://ffmpeg.org/download.html
+#      Add to PATH during install
+#
+#   2. Install VC++ Redistributable (required by some audio libs):
+#      https://aka.ms/vs/17/release/vc_redist.x64.exe
+#
+#   3. Create .env file in project root:
+#      GEMINI_API_KEY=your_key_here
+
+# ── AI / LLM ──────────────────────────────────────────────────────────────────
+google-generativeai
+openai-whisper
+python-dotenv
+
+# ── Wake word ─────────────────────────────────────────────────────────────────
 openwakeword
+
+# ── Audio ─────────────────────────────────────────────────────────────────────
 sounddevice
 numpy
-openai-whisper
-pyttsx3
-pycaw
-psutil
-pyautogui
-requests
-python-dotenv
-google-genai
-edge-tts
 pygame
+edge-tts
+pyttsx3
+pyaudio
+
+# ── TTS fallback ──────────────────────────────────────────────────────────────
+# pyttsx3 needs pywin32 on Windows for SAPI voices
+pywin32; sys_platform == "win32"
+
+# ── System control ────────────────────────────────────────────────────────────
+pyautogui
+psutil
+pycaw; sys_platform == "win32"
+pyperclip
+requests
+
+# ── UI ────────────────────────────────────────────────────────────────────────
+PyQt6
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+scipy
