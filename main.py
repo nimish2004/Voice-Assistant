@@ -2,13 +2,14 @@
 main.py — Entry point for Numa Personal Voice Assistant.
 
 Pipeline:
-    wakeword.py  →  speech.py  →  llm_brain.py  →  actions.py
+    wakeword.py  →  speech.py  →  llm_brain.py  →  actions/registry.py
          ↑                                               ↓
          └──────────────── main.py (orchestrator) ───────┘
 """
 
 import sys
-import state                          # ← import the MODULE, not a value
+import state
+from config.settings import settings
 from wakeword import start_wake_engine
 from speech import listen_and_transcribe
 from llm_brain import get_intent_llm
@@ -19,13 +20,15 @@ from tts import speak
 # ── Startup banner ────────────────────────────────────────────────────────────
 
 def print_banner():
+    wake_word = settings.get("wake_word").title()
     print()
     print("╔══════════════════════════════════════╗")
     print("║     Numa — Personal Voice Assistant   ║")
     print("╠══════════════════════════════════════╣")
-    print("║  Wake word : Alexa (Numa WW training) ║")
+    print(f"║  Wake word : {wake_word:<25} ║")
     print("║  Press Ctrl+C to stop                 ║")
     print("╚══════════════════════════════════════╝")
+    print(f"  Settings : {settings.get_settings_file_path()}")
     print()
 
 
@@ -78,7 +81,7 @@ def on_wake():
 
 def main():
     print_banner()
-    speak("Hello! I am Numa, your personal voice assistant. Say Alexa to wake me up.")
+    speak(settings.get("startup_greeting"))
 
     try:
         start_wake_engine(on_wake)          # blocks until state.is_running() → False

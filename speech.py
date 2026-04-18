@@ -22,19 +22,20 @@ import numpy as np
 import sounddevice as sd
 import whisper
 
-# ── Config ────────────────────────────────────────────────────────────────────
+from config.settings import settings
 
-SAMPLE_RATE      = 16000
-MAX_SILENCE_SEC  = 0.8    # seconds of silence before cutting off recording
-MAX_RECORD_SEC   = 10     # hard ceiling on recording length
-MIN_AUDIO_SEC    = 0.4    # minimum speech length — below this we discard
-CALIBRATION_FILE = "calibration.json"
-NOISE_MULTIPLIER = 3.5    # silence threshold = baseline * this value
+# ── Config (read from settings — never hardcode here) ─────────────────────────
+
+SAMPLE_RATE = 16000   # hardware constant
+
+def _cfg(key: str):
+    return settings.get(key)
+
 
 # ── Whisper model ─────────────────────────────────────────────────────────────
 
 print("🔄  Loading Whisper model...")
-_whisper_model = whisper.load_model("base.en")
+_whisper_model = whisper.load_model(settings.get("whisper_model"))
 print("✅  Whisper ready.")
 
 # ── Calibration ───────────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ def _run_calibration() -> tuple[float, float]:
         samples.append(float(np.mean(np.abs(chunk))))
 
     baseline          = float(np.mean(samples))
-    silence_threshold = baseline * NOISE_MULTIPLIER
+    silence_threshold = baseline * _cfg("stt_noise_multiplier")
     mic_off_threshold = baseline * 0.05
 
     result = {
@@ -62,9 +63,8 @@ def _run_calibration() -> tuple[float, float]:
         "mic_off_threshold" : mic_off_threshold,
     }
 
-    # Cache to disk — next startup skips calibration entirely
     try:
-        with open(CALIBRATION_FILE, "w") as f:
+        with open(_cfg("calibration_file"), "w") as f:
             json.dump(result, f, indent=2)
     except Exception as e:
         print(f"⚠️  Could not cache calibration: {e}")
@@ -75,10 +75,11 @@ def _run_calibration() -> tuple[float, float]:
 
 def _load_calibration() -> tuple[float, float] | None:
     """Load cached calibration from disk. Returns None if missing/stale."""
-    if not os.path.exists(CALIBRATION_FILE):
+    cal_file = _cfg("calibration_file")
+    if not os.path.exists(cal_file):
         return None
     try:
-        with open(CALIBRATION_FILE) as f:
+        with open(cal_file) as f:
             data = json.load(f)
         st = data["silence_threshold"]
         mo = data["mic_off_threshold"]
@@ -130,23 +131,20 @@ def _record_audio() -> np.ndarray | None:
     """
     audio_buffer  : list[np.ndarray] = []
     stop_event    = threading.Event()
-    silence_since : list[float | None] = [None]   # list so callback can mutate
+    silence_since : list[float | None] = [None]
 
     def _callback(indata, frames, time_info, status):
         chunk  = indata.copy()
         volume = float(np.mean(np.abs(chunk)))
-
-        # Always buffer — we decide validity after recording stops
         audio_buffer.append(chunk)
 
-        # ── Silence detection ─────────────────────────────────────────────
         if volume < SILENCE_THRESHOLD:
             if silence_since[0] is None:
                 silence_since[0] = time.monotonic()
-            elif time.monotonic() - silence_since[0] >= MAX_SILENCE_SEC:
+            elif time.monotonic() - silence_since[0] >= _cfg("stt_max_silence_sec"):
                 stop_event.set()
         else:
-            silence_since[0] = None  # reset on any audible sound
+            silence_since[0] = None
 
     stream = sd.InputStream(
         samplerate = SAMPLE_RATE,
@@ -156,8 +154,7 @@ def _record_audio() -> np.ndarray | None:
     )
 
     with stream:
-        # Block until stop_event fires OR hard timeout expires
-        stop_event.wait(timeout=MAX_RECORD_SEC)
+        stop_event.wait(timeout=_cfg("stt_max_record_sec"))
 
     if not audio_buffer:
         return None
@@ -187,7 +184,7 @@ def listen_and_transcribe() -> str:
         return ""
 
     duration = len(recording) / SAMPLE_RATE
-    if duration < MIN_AUDIO_SEC:
+    if duration < _cfg("stt_min_audio_sec"):
         print(f"⚠️  Audio too short ({duration:.2f}s) — discarding.")
         return ""
 
@@ -196,9 +193,9 @@ def listen_and_transcribe() -> str:
     try:
         result = _whisper_model.transcribe(
             recording,
-            language        = "en",
-            condition_on_previous_text = False,   # faster, less hallucination
-            fp16            = False,               # stable on CPU
+            language                   = _cfg("stt_language"),
+            condition_on_previous_text = False,
+            fp16                       = False,
         )
         text = result["text"].strip().lower()
     except Exception as e:

@@ -20,23 +20,26 @@ import os
 import threading
 from datetime import datetime, timezone
 
-# ── Config ────────────────────────────────────────────────────────────────────
+from config.settings import settings
 
-MEMORY_FILE  = "memory.json"
-MAX_HISTORY  = 20       # total messages kept (user + assistant combined)
-_lock        = threading.Lock()
+# ── Config (always read live from settings) ───────────────────────────────────
+
+def _memory_file() -> str : return settings.get("memory_file")
+def _max_history() -> int : return settings.get("memory_max_history")
+
+_lock = threading.Lock()
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 def _load() -> list:
     """Load history from disk. Returns [] on any failure."""
-    if not os.path.exists(MEMORY_FILE):
+    mem_file = _memory_file()
+    if not os.path.exists(mem_file):
         return []
     try:
-        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+        with open(mem_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Validate: must be a list of dicts
             if isinstance(data, list):
                 return data
     except Exception as e:
@@ -45,20 +48,15 @@ def _load() -> list:
 
 
 def _save(history: list):
-    """
-    Persist history atomically:
-      write → memory.tmp  →  rename to memory.json
-    Rename is atomic on POSIX; on Windows it falls back to a direct write.
-    """
-    tmp = MEMORY_FILE + ".tmp"
+    """Atomically persist history to disk."""
+    mem_file = _memory_file()
+    tmp = mem_file + ".tmp"
     try:
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(history, f, indent=2, ensure_ascii=False)
-        # os.replace is atomic on both POSIX and Windows (Python 3.3+)
-        os.replace(tmp, MEMORY_FILE)
+        os.replace(tmp, mem_file)
     except Exception as e:
         print(f"❌  Memory save error: {e}")
-        # Clean up orphaned tmp file
         if os.path.exists(tmp):
             try:
                 os.remove(tmp)
@@ -111,9 +109,10 @@ def add_exchange(user_text: str, assistant_response: str, intent_type: str = "ch
             "timestamp" : timestamp,
         })
 
-        # Trim to MAX_HISTORY (trim from the oldest end)
-        if len(history) > MAX_HISTORY:
-            history = history[-MAX_HISTORY:]
+        # Trim to max_history (read live from settings)
+        max_h = _max_history()
+        if len(history) > max_h:
+            history = history[-max_h:]
 
         _save(history)
 

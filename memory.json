@@ -1,62 +1,102 @@
 [
   {
     "role": "user",
-    "content": "can you open your tube?"
-  },
-  {
-    "role": "user",
-    "content": "can you open instagram?"
-  },
-  {
-    "role": "user",
-    "content": "what does the trump said today?"
-  },
-  {
-    "role": "user",
-    "content": "how are you? can you tell me a joke?"
+    "content": "set volume 230.",
+    "timestamp": "2026-04-18T10:14:30+00:00"
   },
   {
     "role": "assistant",
-    "content": "I'm doing great, thank you for asking! As for a joke, why don't scientists trust atoms? Because they make up everything!"
+    "content": "[task: set_volume]",
+    "timestamp": "2026-04-18T10:14:30+00:00"
   },
   {
     "role": "user",
-    "content": "can you play music and increase the volume?"
+    "content": "set volume 240.",
+    "timestamp": "2026-04-18T10:14:42+00:00"
   },
   {
     "role": "assistant",
-    "content": "Sorry, I didn't understand that."
+    "content": "[task: set_volume]",
+    "timestamp": "2026-04-18T10:14:42+00:00"
   },
   {
     "role": "user",
-    "content": "can you play music?"
-  },
-  {
-    "role": "user",
-    "content": "can you increase volume?"
-  },
-  {
-    "role": "user",
-    "content": "can you stop music?"
-  },
-  {
-    "role": "user",
-    "content": "can you take the screenshot?",
-    "timestamp": "2026-04-18T09:20:51+00:00"
+    "content": "set volume for t.",
+    "timestamp": "2026-04-18T10:14:52+00:00"
   },
   {
     "role": "assistant",
-    "content": "[task: take_screenshot]",
-    "timestamp": "2026-04-18T09:20:51+00:00"
+    "content": "[task: volume_up]",
+    "timestamp": "2026-04-18T10:14:52+00:00"
   },
   {
     "role": "user",
-    "content": "can you play music?",
-    "timestamp": "2026-04-18T09:22:48+00:00"
+    "content": "set to volume 30.",
+    "timestamp": "2026-04-18T10:15:01+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "[task: set_volume]",
+    "timestamp": "2026-04-18T10:15:01+00:00"
+  },
+  {
+    "role": "user",
+    "content": "exit the system goodbye.",
+    "timestamp": "2026-04-18T10:15:17+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "[task: exit]",
+    "timestamp": "2026-04-18T10:15:17+00:00"
+  },
+  {
+    "role": "user",
+    "content": "can you open youtube and play music?",
+    "timestamp": "2026-04-18T10:15:55+00:00"
   },
   {
     "role": "assistant",
     "content": "[task: play_music]",
-    "timestamp": "2026-04-18T09:22:48+00:00"
+    "timestamp": "2026-04-18T10:15:55+00:00"
+  },
+  {
+    "role": "user",
+    "content": "can you open youtube and play music?",
+    "timestamp": "2026-04-18T10:16:42+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "[task: play_music]",
+    "timestamp": "2026-04-18T10:16:42+00:00"
+  },
+  {
+    "role": "user",
+    "content": "can you increase the volume?",
+    "timestamp": "2026-04-18T10:25:21+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "[task: volume_up]",
+    "timestamp": "2026-04-18T10:25:21+00:00"
+  },
+  {
+    "role": "user",
+    "content": "what is today's date?",
+    "timestamp": "2026-04-18T10:26:21+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "[task: tell_date]",
+    "timestamp": "2026-04-18T10:26:21+00:00"
+  },
+  {
+    "role": "user",
+    "content": "which day is today?",
+    "timestamp": "2026-04-18T10:26:35+00:00"
+  },
+  {
+    "role": "assistant",
+    "content": "[task: tell_date]",
+    "timestamp": "2026-04-18T10:26:35+00:00"
   }
 ]
