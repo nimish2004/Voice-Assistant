@@ -1,119 +1,169 @@
 @echo off
+setlocal EnableDelayedExpansion
 title Numa Setup
+color 0F
+
 echo.
 echo  =============================================
 echo   Numa - Personal Voice Assistant - Setup
+echo   Version 2.0
 echo  =============================================
 echo.
 
-REM ── Check Python version ──────────────────────────────────────────────────
-python --version 2>nul | findstr /C:"3.10" >nul
-if errorlevel 1 (
-    echo  [ERROR] Python 3.10 is required but not found.
-    echo.
-    echo  Please download Python 3.10 from:
-    echo  https://www.python.org/downloads/release/python-31011/
-    echo.
-    echo  Make sure to check "Add Python to PATH" during install.
-    pause
-    exit /b 1
-)
+REM ── STEP 1: Check Python 3.10 ─────────────────────────────────────────────
+echo  [1/7] Checking Python version...
 
+py -3.10 --version >nul 2>&1
+if errorlevel 1 (
+    python --version 2>nul | findstr /C:"3.10" >nul
+    if errorlevel 1 (
+        echo.
+        echo  [ERROR] Python 3.10 not found.
+        echo.
+        echo  Download from:
+        echo  https://www.python.org/downloads/release/python-31011/
+        echo.
+        echo  IMPORTANT: Check "Add Python to PATH" during install.
+        pause
+        exit /b 1
+    )
+    set PYTHON=python
+) else (
+    set PYTHON=py -3.10
+)
 echo  [OK] Python 3.10 found.
 echo.
 
-REM ── Check FFmpeg ──────────────────────────────────────────────────────────
+REM ── STEP 2: Check FFmpeg ──────────────────────────────────────────────────
+echo  [2/7] Checking FFmpeg...
 ffmpeg -version >nul 2>&1
 if errorlevel 1 (
-    echo  [WARNING] FFmpeg not found in PATH.
-    echo.
-    echo  Whisper requires FFmpeg. Please install it:
-    echo  1. Download from: https://ffmpeg.org/download.html
-    echo  2. Extract and add the bin/ folder to your PATH
-    echo  3. Run this setup again
-    echo.
-    echo  Or install via winget:
-    echo  winget install ffmpeg
-    echo.
-    pause
-    exit /b 1
+    echo  [WARNING] FFmpeg not found. Install via: winget install ffmpeg
+    echo  Whisper may not work without it. Continuing anyway...
+) else (
+    echo  [OK] FFmpeg found.
 )
-
-echo  [OK] FFmpeg found.
 echo.
 
-REM ── Create virtual environment ─────────────────────────────────────────────
-echo  Creating virtual environment...
+REM ── STEP 3: Create virtual environment ───────────────────────────────────
+echo  [3/7] Setting up virtual environment...
 if not exist ".venv" (
-    python -m venv .venv
+    %PYTHON% -m venv .venv
+    if errorlevel 1 (
+        echo  [ERROR] Failed to create virtual environment.
+        pause
+        exit /b 1
+    )
     echo  [OK] Virtual environment created.
 ) else (
-    echo  [OK] Virtual environment already exists.
+    echo  [OK] Already exists.
 )
 echo.
 
-REM ── Activate venv ─────────────────────────────────────────────────────────
-call .venv\Scripts\activate.bat
+REM ── Use venv pip and python directly - NEVER bare pip ─────────────────────
+set VENV_PIP=.venv\Scripts\pip.exe
+set VENV_PYTHON=.venv\Scripts\python.exe
 
-REM ── Upgrade pip ───────────────────────────────────────────────────────────
-echo  Upgrading pip...
-python -m pip install --upgrade pip --quiet
-echo  [OK] pip upgraded.
+REM ── STEP 4: Upgrade pip ──────────────────────────────────────────────────
+echo  [4/7] Upgrading pip...
+%VENV_PYTHON% -m pip install --upgrade pip --quiet
+echo  [OK] Done.
 echo.
 
-REM ── Install dependencies ───────────────────────────────────────────────────
-echo  Installing dependencies (this may take 5-10 minutes)...
-echo  Downloading Whisper, PyQt6, and audio libraries...
+REM ── STEP 5: Install dependencies ─────────────────────────────────────────
+echo  [5/7] Installing dependencies (5-15 min first time)...
 echo.
-pip install -r requirements.txt
-
+%VENV_PIP% install -r requirements.txt
 if errorlevel 1 (
     echo.
-    echo  [ERROR] Some packages failed to install.
-    echo  Check the errors above and try again.
+    echo  [ERROR] Install failed. Check errors above.
     pause
     exit /b 1
 )
-
 echo.
-echo  [OK] All dependencies installed.
+echo  [OK] Dependencies installed.
 echo.
 
-REM ── Check .env file ───────────────────────────────────────────────────────
+REM ── STEP 6: Download wake word models ────────────────────────────────────
+echo  [6/7] Installing wake word model...
+set MODEL_DEST=.venv\Lib\site-packages\openwakeword\resources\models
+set BUNDLED=assets\models\alexa_v0.1.onnx
+
+if exist "%BUNDLED%" (
+    echo  Copying bundled model...
+    if not exist "%MODEL_DEST%" mkdir "%MODEL_DEST%"
+    copy /Y "%BUNDLED%" "%MODEL_DEST%\alexa_v0.1.onnx" >nul
+    echo  [OK] Model installed from bundle.
+) else (
+    echo  Downloading from internet...
+    %VENV_PYTHON% -c "import openwakeword; openwakeword.utils.download_models()" 2>nul
+    if errorlevel 1 (
+        echo  Trying direct GitHub download...
+        %VENV_PYTHON% -c "import urllib.request, os; os.makedirs(r'.venv\Lib\site-packages\openwakeword\resources\models', exist_ok=True); urllib.request.urlretrieve('https://github.com/dscripka/openWakeWord/releases/download/v0.1.1/alexa_v0.1.onnx', r'.venv\Lib\site-packages\openwakeword\resources\models\alexa_v0.1.onnx'); print('[OK] Downloaded.')"
+        if errorlevel 1 (
+            echo  [WARNING] Auto-download failed.
+            echo  Manual fix: copy alexa_v0.1.onnx to %MODEL_DEST%\
+        )
+    ) else (
+        echo  [OK] Models downloaded.
+    )
+)
+echo.
+
+REM ── STEP 7: Verify critical imports ──────────────────────────────────────
+echo  [7/7] Verifying installation...
+echo.
+%VENV_PYTHON% -c "from google import genai; print('  [OK] google-genai')"
+if errorlevel 1 (
+    echo  [FIXING] Reinstalling google-genai into venv...
+    %VENV_PIP% install --force-reinstall google-genai --quiet
+    %VENV_PYTHON% -c "from google import genai; print('  [OK] google-genai fixed')"
+)
+%VENV_PYTHON% -c "import whisper; print('  [OK] whisper')"
+%VENV_PYTHON% -c "import PyQt6; print('  [OK] PyQt6')"
+%VENV_PYTHON% -c "import sounddevice; print('  [OK] sounddevice')"
+%VENV_PYTHON% -c "import openwakeword; print('  [OK] openwakeword')"
+echo.
+
+REM ── Setup .env ────────────────────────────────────────────────────────────
 if not exist ".env" (
-    echo  Creating .env file...
-    echo GEMINI_API_KEY=your_key_here > .env
-    echo.
-    echo  [ACTION REQUIRED] Open the .env file and add your Gemini API key.
-    echo  Get a free key at: https://aistudio.google.com/apikey
+    echo GEMINI_API_KEY=your_key_here> .env
+    echo  [ACTION REQUIRED] Open .env and add your Gemini API key.
+    echo  Get one free at: https://aistudio.google.com/apikey
     echo.
 ) else (
-    echo  [OK] .env file found.
+    findstr /C:"your_key_here" .env >nul
+    if not errorlevel 1 (
+        echo  [REMINDER] Replace 'your_key_here' in .env with your real API key!
+        echo.
+    ) else (
+        echo  [OK] .env configured.
+        echo.
+    )
 )
 
-REM ── Create launch shortcut ────────────────────────────────────────────────
-echo  Creating start script...
+REM ── Create launcher ───────────────────────────────────────────────────────
 (
     echo @echo off
-    echo cd /d "%~dp0"
+    echo cd /d "%%~dp0"
+    echo if not exist ".venv\Scripts\activate.bat" (
+    echo     echo [ERROR] Run setup.bat first!
+    echo     pause
+    echo     exit /b 1
+    echo )
     echo call .venv\Scripts\activate.bat
     echo python main.py
+    echo if errorlevel 1 (
+    echo     echo.
+    echo     echo Numa exited with an error. See above.
+    echo     pause
+    echo )
 ) > start_numa.bat
 
-echo  [OK] start_numa.bat created.
-echo.
-
-REM ── Done ──────────────────────────────────────────────────────────────────
 echo  =============================================
-echo   Setup Complete!
+echo   Setup Complete! 
 echo  =============================================
 echo.
-echo  Next steps:
-echo  1. Add your Gemini API key to the .env file
-echo  2. Double-click start_numa.bat to launch
-echo  3. The onboarding screen will guide you through setup
-echo.
-echo  Note: First launch downloads Whisper model (~150MB)
-echo  Make sure you have internet connection.
+echo  Next: Double-click start_numa.bat to launch.
 echo.
 pause

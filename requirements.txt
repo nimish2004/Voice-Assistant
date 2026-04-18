@@ -1,26 +1,19 @@
 # ── Numa Requirements ─────────────────────────────────────────────────────────
-# Install with: pip install -r requirements.txt
+# DO NOT run with bare 'pip install' - always use setup.bat
+# which installs into the virtual environment correctly.
 #
-# Additional manual steps required:
-#   1. Install FFmpeg (required by Whisper):
-#      https://ffmpeg.org/download.html
-#      Add to PATH during install
-#
-#   2. Install VC++ Redistributable (required by some audio libs):
-#      https://aka.ms/vs/17/release/vc_redist.x64.exe
-#
-#   3. Create .env file in project root:
-#      GEMINI_API_KEY=your_key_here
+# Manual install: .venv\Scripts\pip.exe install -r requirements.txt
 
-# ── AI / LLM ──────────────────────────────────────────────────────────────────
-google-generativeai
+# ── AI / Speech ───────────────────────────────────────────────────────────────
+google-genai
 openai-whisper
 python-dotenv
 
-# ── Wake word ─────────────────────────────────────────────────────────────────
+# ── Wake word detection ───────────────────────────────────────────────────────
 openwakeword
+onnxruntime
 
-# ── Audio ─────────────────────────────────────────────────────────────────────
+# ── Audio input/output ────────────────────────────────────────────────────────
 sounddevice
 numpy
 pygame
@@ -28,19 +21,17 @@ edge-tts
 pyttsx3
 pyaudio
 
-# ── TTS fallback ──────────────────────────────────────────────────────────────
-# pyttsx3 needs pywin32 on Windows for SAPI voices
-pywin32; sys_platform == "win32"
-
 # ── System control ────────────────────────────────────────────────────────────
 pyautogui
 psutil
-pycaw; sys_platform == "win32"
 pyperclip
 requests
+scipy
+
+# ── Volume control (Windows only) ────────────────────────────────────────────
+pycaw; sys_platform == "win32"
+comtypes; sys_platform == "win32"
+pywin32; sys_platform == "win32"
 
 # ── UI ────────────────────────────────────────────────────────────────────────
 PyQt6
-
-# ── Utilities ─────────────────────────────────────────────────────────────────
-scipy
